@@ -1,13 +1,11 @@
 cmake_minimum_required(VERSION 3.29)
 
-set(KF_VERSION "6.30.0") # handled by release scripts
+set(KF_VERSION "6.29.0") # handled by release scripts
 project(KIdleTime VERSION ${KF_VERSION})
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ECM setup
 include(FeatureSummary)
-find_package(ECM 6.29.0  NO_MODULE)
+find_package(ECM 6.28.0  NO_MODULE)
 set_package_properties(ECM PROPERTIES TYPE REQUIRED DESCRIPTION "Extra CMake Modules." URL "https://commits.kde.org/extra-cmake-modules")
 feature_summary(WHAT REQUIRED_PACKAGES_NOT_FOUND FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
@@ -36,31 +34,62 @@ ecm_setup_version(PROJECT VARIABLE_PREFIX KIDLETIME
 set(REQUIRED_QT_VERSION 6.9.0)
 find_package(Qt6 ${REQUIRED_QT_VERSION} CONFIG REQUIRED Gui)
 
-set(KIDLETIME_UNIX_X11 FALSE)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    set(KIDLETIME_UNIX_X11 TRUE)
+option(WITH_X11 "Build X11 support" ON)
+option(WITH_WAYLAND "BUILD Wayland support" ON)
+
+if(APPLE OR WIN32 OR HAIKU)
+    set(WITH_X11 OFF)
+    set(WITH_WAYLAND OFF)
 endif()
 
 if(APPLE)
     cmake_find_frameworks(CoreFoundation Carbon)
 endif()
 
-# Linux/FreeBSD require the XSync backend
-if(KIDLETIME_UNIX_X11)
+if(WITH_X11)
     find_package(X11 REQUIRED)
     find_package(XCB REQUIRED COMPONENTS XCB SYNC)
     find_package(X11_XCB REQUIRED)
+    set(HAVE_X11 TRUE)
 
-    if(NOT X11_XSync_FOUND)
-        message(FATAL_ERROR
-            "KIdleTime on Linux/FreeBSD requires the XSync extension (libXext).\n"
-            "Please install libxext development headers and libraries.")
+    if (X11_XSync_FOUND AND XCB_XCB_FOUND AND X11_XCB_FOUND AND XCB_SYNC_FOUND)
+        # One cannot just use "set(HAVE_XSYNC X11_XSync_FOUND AND XCB_XCB_FOUND...)"
+        # Doing so would create a list because the value passed to set() is not evaluated.
+        set(HAVE_XSYNC TRUE)
+    else()
+        set(HAVE_XSYNC FALSE)
     endif()
-
     add_feature_info("libXext" X11_XSync_FOUND "required for X-Sync based poller")
     add_feature_info("libX11-xcb" X11_XCB_FOUND "required for X-Sync based poller")
     add_feature_info("libxcb" XCB_XCB_FOUND "required for X-Sync based poller")
     add_feature_info("libxcb-sync" XCB_SYNC_FOUND "required for X-Sync based poller")
+    add_feature_info("X-Sync based poller" HAVE_XSYNC "efficient operation of KIdleTime. STRONGLY RECOMMENDED (requires libXext, libX11-xcb, libxcb and libxcb-sync)")
+
+    set(HAVE_XSCREENSAVER ${X11_Xscreensaver_FOUND})
+    add_feature_info("X-Screensaver based poller" HAVE_XSCREENSAVER "KIdleTime fallback mode (libXss)")
+
+    if(HAVE_XSCREENSAVER)
+        find_package(Qt6 ${REQUIRED_QT_VERSION} CONFIG REQUIRED DBus)
+    endif()
+
+    if(NOT HAVE_XSCREENSAVER AND NOT HAVE_XSYNC)
+        message(FATAL_ERROR "\nNeither the XSync (libXext) nor XScreensaver (libXss) development package was found.\nPlease install one of them (XSync is recommended)")
+    endif()
+else()
+    set(HAVE_X11 FALSE)
+endif()
+
+if(WITH_WAYLAND)
+    find_package(Qt6Gui REQUIRED CONFIG COMPONENTS Private)
+    find_package(Qt6WaylandClient ${REQUIRED_QT_VERSION} REQUIRED CONFIG)
+    find_package(Wayland 1.9 REQUIRED Client)
+    find_package(PlasmaWaylandProtocols 1.6.0 CONFIG REQUIRED)
+    find_package(WaylandProtocols 1.27)
+    set_package_properties(WaylandProtocols PROPERTIES
+        TYPE REQUIRED
+        PURPOSE "Collection of Wayland protocols that add functionality not available in the Wayland core protocol"
+        URL "https://gitlab.freedesktop.org/wayland/wayland-protocols/"
+    )
 endif()
 
 set(EXCLUDE_DEPRECATED_BEFORE_AND_AT 0 CACHE STRING "Control the range of deprecated API excluded from the build [default=0].")
