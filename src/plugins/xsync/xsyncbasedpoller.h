@@ -10,8 +10,6 @@
 #include "kabstractidletimepoller_p.h"
 #include <QHash>
 
-#include <config-kidletime.h>
-
 #include <X11/Xlib.h>
 #include <X11/extensions/sync.h>
 #include <xcb/xcb.h>

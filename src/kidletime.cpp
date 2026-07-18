@@ -6,8 +6,6 @@
 
 #include "kidletime.h"
 
-#include <config-kidletime.h>
-
 #include "kabstractidletimepoller_p.h"
 #include "logging.h"
 

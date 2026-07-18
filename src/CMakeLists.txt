@@ -1,5 +1,3 @@
-configure_file(config-kidletime.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-kidletime.h )
-
 add_library(KF6IdleTime)
 add_library(KF6::IdleTime ALIAS KF6IdleTime)
 
