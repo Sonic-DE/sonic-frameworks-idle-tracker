@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.30)
 
 set(KF_VERSION "6.30.0") # handled by release scripts
 project(KIdleTime VERSION ${KF_VERSION})
@@ -28,6 +28,7 @@ include(ECMSetupVersion)
 include(ECMGenerateHeaders)
 include(ECMDeprecationSettings)
 include(ECMGenerateQDoc)
+include(ECMInstalledLibraryCheck)
 
 set(kiconthemes_version_header "${CMAKE_CURRENT_BINARY_DIR}/src/kidletime_version.h")
 ecm_setup_version(PROJECT VARIABLE_PREFIX KIDLETIME
@@ -35,7 +36,7 @@ ecm_setup_version(PROJECT VARIABLE_PREFIX KIDLETIME
                         PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/KF6IdleTimeConfigVersion.cmake"
                         SOVERSION 6)
 
-set(REQUIRED_QT_VERSION 6.9.0)
+set(REQUIRED_QT_VERSION 6.10.0)
 find_package(Qt6 ${REQUIRED_QT_VERSION} CONFIG REQUIRED Gui)
 
 set(KIDLETIME_UNIX_X11 FALSE)
